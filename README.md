@@ -28,6 +28,7 @@ Lightweight, offline, cross platform, and optimized for fast semantic image infe
 git clone https://github.com/rachit9876/CLIP-ONNX.git
 cd CLIP-ONNX
 ```
+*(OR get the [ZIP](https://github.com/rachit9876/CLIP-ONNX/archive/refs/heads/main.zip) and extract it and open the `CLIP-ONNX` directory)*
 
 ---
 
