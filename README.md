@@ -1,75 +1,165 @@
-# CLIP-ONNX
+# `CLIP-ONNX`
 
-Run OpenAI's CLIP model fully offline using ONNX Runtime. No GPU required : built for systems with iGPUs.
+### Run OpenAI CLIP Models Offline with ONNX Runtime on CPU, iGPU, and Edge Devices
 
-Given a text prompt and a folder of images, it ranks how well each image matches the prompt.
+Run OpenAI CLIP image text models fully offline using ONNX Runtime.
+No dedicated GPU required. Optimized for CPUs, Intel Iris Xe, AMD APUs, laptops, mini PCs, and low power edge systems.
 
----
+`CLIP-ONNX` lets you:
 
-## How It Works
+* Classify images using natural language prompts
+* Search images with text queries
+* Rank images by semantic similarity
+* Run CLIP locally without internet
+* Use OpenAI CLIP through ONNX for fast inference
+* Deploy lightweight vision AI pipelines on Windows, Linux, or macOS
 
-CLIP (ViT-B/32) has two encoders — one for text, one for images. Both produce embeddings in the same vector space, so you can measure similarity between them using cosine similarity.
+Supports:
 
-This project exports both encoders to ONNX format for fast CPU inference, then uses softmax over a set of candidate prompts to classify each image.
-
-```
-Image → Vision Encoder (FP32) → image embedding (512-dim)
-Text  → Text Encoder  (FP32) → text embedding  (512-dim)
-                                      ↓
-                         cosine similarity × logit_scale
-                                      ↓
-                              softmax → % match
-```
-
----
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `build.py` | Downloads CLIP from HuggingFace, exports to ONNX |
-| `test.py` | Runs inference on images in the current folder |
-| `clip_image.onnx` | Vision encoder — FP32, ~351MB |
-| `clip_text.onnx` | Text encoder — FP32, ~254MB |
-
-> **Note:** `clip_text_int8.onnx` is also generated during build but not used. INT8 quantization degraded embedding quality enough to flip rankings. Delete it after building.
+* ONNX Runtime
+* Hugging Face Transformers
+* OpenAI CLIP ViT models
+* CPU inference
+* Offline AI workflows
 
 ---
 
-## Setup
+# Features
 
-**Requirements**
+* Fully offline inference
+* ONNX exported CLIP encoders
+* CPU optimized
+* Works on integrated GPUs and low end systems
+* Natural language image classification
+* Semantic image search
+* Zero shot image recognition
+* Cross platform
+* No cloud APIs
+* Simple Python implementation
+* Easily extensible for custom datasets
 
+---
+
+# Example Use Cases
+
+* Local AI image tagging
+* Offline photo organization
+* Reverse image style matching
+* AI powered desktop search
+* Embedded vision systems
+* Edge AI deployments
+* Semantic image retrieval
+* Dataset filtering
+* Prompt based image ranking
+* Lightweight CLIP experimentation
+
+---
+
+# How CLIP Works
+
+CLIP maps both images and text into the same embedding space.
+
+The closer the embeddings are, the more semantically related they are.
+
+```text
+Image → Vision Encoder → Image Embedding (512)
+Text  → Text Encoder   → Text Embedding  (512)
+
+Cosine Similarity
+        ↓
+Softmax Ranking
+        ↓
+Best Matching Prompt
 ```
-Python 3.10+
-torch
-transformers
-onnxruntime
-onnx
-Pillow
-numpy
-```
 
-Install:
+This project exports both OpenAI CLIP encoders to ONNX format for fast local inference using ONNX Runtime.
+
+---
+
+# Repository Structure
+
+| File              | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `build.py`        | Downloads CLIP from Hugging Face and exports ONNX models |
+| `test.py`         | Runs text to image similarity inference                  |
+| `clip_image.onnx` | Vision encoder model                                     |
+| `clip_text.onnx`  | Text encoder model                                       |
+
+---
+
+# Requirements
+
+* Python 3.10+
+* torch
+* transformers
+* onnx
+* onnxruntime
+* Pillow
+* numpy
+
+Install dependencies:
 
 ```bash
 pip install torch transformers onnxruntime onnx Pillow numpy
 ```
 
-**Build the ONNX models** (one-time, needs internet to download CLIP weights ~600MB):
+---
+
+# Setup
+
+## 1. Clone Repository
+
+```bash
+git clone https://github.com/yourusername/CLIP-ONNX.git
+cd CLIP-ONNX
+```
+
+## 2. Create Virtual Environment
+
+### Windows
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+---
+
+# Build ONNX Models
+
+Downloads CLIP weights from Hugging Face and exports ONNX models.
 
 ```bash
 python build.py
 ```
 
-This generates `clip_image.onnx` and `clip_text.onnx` in the current folder.
+Generated files:
+
+```text
+clip_image.onnx
+clip_text.onnx
+```
 
 ---
 
-## Usage
+# Usage
 
-1. Put your images (`.jpg`, `.jpeg`, `.png`) in the same folder as `test.py`
-2. Open `test.py` and edit the candidate prompts at the top of `__main__`:
+Place images inside the project folder:
+
+```text
+image1.jpg
+image2.png
+image3.jpeg
+```
+
+Edit candidate prompts in `test.py`:
 
 ```python
 candidate_prompts = [
@@ -81,95 +171,137 @@ candidate_prompts = [
 ]
 ```
 
-3. Run:
+Run inference:
 
 ```bash
 python test.py
 ```
 
-**Example output:**
+---
 
-```
-Image: test_dog.jpg
-   22.32%  a photo of a golden retriever puppy  <-- BEST
-   19.12%  a photo of a car
-   19.69%  a photo of a cat
-   19.71%  a photo of a person
-   19.16%  a photo of a landscape
+# Example Output
+
+```text
+Image: dog.jpg
+
+22.32%  a photo of a golden retriever puppy   <-- BEST
+19.12%  a photo of a car
+19.69%  a photo of a cat
+19.71%  a photo of a person
+19.16%  a photo of a landscape
 ```
 
-Results are also saved to `results.txt`.
+Results are also written to:
+
+```text
+results.txt
+```
 
 ---
 
-## Writing Good Prompts
+# Best Prompting Practices
 
-CLIP was trained on image captions, so natural caption-style prompts work best.
+CLIP performs best with caption style prompts.
 
-| Instead of | Use |
-|------------|-----|
-| `"dog"` | `"a photo of a dog"` |
-| `"car"` | `"a black sports car parked outdoors"` |
-| `"forest"` | `"a dense green forest with tall trees"` |
+## Weak Prompt
 
-The more specific and descriptive, the better. Generic one-word labels give weak signal.
+```text
+dog
+```
 
-Also: CLIP reads the **whole image**, not just the subject. A car photo with a dramatic sky background may score higher on "landscape" than "car" if the background dominates the frame.
+## Better Prompt
+
+```text
+a photo of a brown dog sitting outdoors
+```
+
+More descriptive prompts usually produce stronger semantic separation.
+
+CLIP also evaluates the entire scene, not just the main object.
 
 ---
 
-## Adapting the Code
+# Supported Models
 
-**Change the model**
-
-In both `build.py` and `test.py`, update:
+Default model:
 
 ```python
 MODEL = "openai/clip-vit-base-patch32"
 ```
 
-Other supported models: `openai/clip-vit-large-patch14`, `openai/clip-vit-base-patch16`
-Larger models = better accuracy, bigger ONNX files.
+Other compatible models:
 
-**Scan a specific folder instead of current directory**
-
-In `test.py`, replace:
-
-```python
-image_files = glob.glob("*.jpg") + glob.glob("*.jpeg") + glob.glob("*.png")
+```text
+openai/clip-vit-base-patch16
+openai/clip-vit-large-patch14
 ```
 
-With:
+Larger models improve accuracy but increase ONNX size and inference time.
+
+---
+
+# Run on CPU or iGPU
+
+This repository is designed for:
+
+* Intel Iris Xe
+* AMD Radeon integrated graphics
+* Low VRAM systems
+* CPU only environments
+* Thin laptops
+* Edge hardware
+
+No CUDA dependency required.
+
+---
+
+# Example Integration
 
 ```python
-folder = r"C:\path\to\your\images"
-image_files = glob.glob(f"{folder}/*.jpg") + glob.glob(f"{folder}/*.jpeg") + glob.glob(f"{folder}/*.png")
-```
-
-**Use it as a module in your own code**
-
-```python
-from test import encode_text, encode_image, similarity, softmax
+from test import encode_text, encode_image
 import numpy as np
 
 text_emb = encode_text(["a photo of a dog"])
 image_emb = encode_image("myimage.jpg")
 
 logits = (image_emb @ text_emb.T)[0] * 100.0
-print(f"Score: {logits[0]:.2f}")
+
+print(logits)
 ```
 
 ---
 
-## Known Limitations
+# Performance Notes
 
-- Images are resized to 224×224 before inference. Very wide or tall images will be squished — crop first for best results.
-- Softmax scores are relative to your candidate list. A "best" pick at 22% just means it beat your other options — it's not a confidence score in the absolute sense.
-- CPU inference on a large image folder is slow. For batches over ~500 images, consider batching `encode_image` calls.
+* Images are resized to `224×224`
+* Softmax scores are relative, not absolute confidence
+* Large folders should use batched inference
+* FP32 models preserve embedding quality better than INT8
 
 ---
 
-## Credits
+# Why ONNX?
 
-Model weights: [OpenAI CLIP](https://github.com/openai/CLIP)
-Exported via: [HuggingFace Transformers](https://huggingface.co/openai/clip-vit-base-patch32) + [ONNX Runtime](https://onnxruntime.ai/)
+ONNX provides:
+
+* Faster CPU inference
+* Cross platform deployment
+* Hardware agnostic execution
+* Easier production deployment
+* Lightweight runtime requirements
+
+Perfect for local AI applications and offline machine learning systems.
+
+---
+
+# SEO Keywords
+
+CLIP ONNX, OpenAI CLIP ONNX, ONNX Runtime CLIP, offline CLIP model, local AI image classifier, CPU image recognition, zero shot image classification, semantic image search, Hugging Face CLIP ONNX, OpenAI vision model offline, CLIP ViT B32 ONNX, AI image similarity search, ONNX image embeddings, lightweight vision AI, edge AI image search, integrated GPU AI inference, CPU based computer vision, offline multimodal AI
+
+---
+
+# Credits
+
+* [OpenAI CLIP](https://github.com/openai/CLIP?utm_source=chatgpt.com)
+* [Hugging Face Transformers](https://huggingface.co/openai/clip-vit-base-patch32?utm_source=chatgpt.com)
+* [ONNX Runtime](https://onnxruntime.ai/?utm_source=chatgpt.com)
