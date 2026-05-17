@@ -1,8 +1,10 @@
 # CLIP-ONNX
 
-Run OpenAI CLIP locally using ONNX Runtime on CPU, integrated GPUs, and low power devices.
+[Download Vision Model](https://github.com/rachit9876/CLIP-ONNX/releases/download/v1.0.0/clip_image.onnx) • [Download Text Model](https://github.com/rachit9876/CLIP-ONNX/releases/download/v1.0.0/clip_text.onnx)
 
-Lightweight, offline, and optimized for fast semantic image inference without CUDA.
+Run OpenAI CLIP locally with ONNX Runtime on CPUs, integrated GPUs, and low power systems.
+
+Lightweight, offline, cross platform, and optimized for fast semantic image inference without CUDA.
 
 ---
 
@@ -10,7 +12,7 @@ Lightweight, offline, and optimized for fast semantic image inference without CU
 
 * Offline CLIP inference
 * ONNX Runtime backend
-* CPU + iGPU optimized
+* CPU and iGPU optimized
 * Zero shot image classification
 * Semantic image search
 * Cross platform support
@@ -18,54 +20,71 @@ Lightweight, offline, and optimized for fast semantic image inference without CU
 
 ---
 
-## Quick Start
+# Quick Start
 
-### Clone Repository
+## Clone Repository
 
-```bash id="b9j3do"
+```bash
 git clone https://github.com/rachit9876/CLIP-ONNX.git
 cd CLIP-ONNX
 ```
 
-### Create Virtual Environment
+---
 
-#### Windows
+## Create Virtual Environment
 
-```bash id="r9zz2o"
+### Windows
+
+```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-#### Linux / macOS
+### Linux / macOS
 
-```bash id="0e5w2t"
+```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Install Dependencies
+---
 
-```bash id="z3fhd7"
+## Install Dependencies
+
+```bash
 pip install torch transformers onnxruntime onnx Pillow numpy
 ```
 
-### Build Models
+---
 
-```bash id="2u10pw"
+## Build ONNX Models
+
+```bash
 python build.py
 ```
 
-### Run Inference
+This exports:
 
-```bash id="qz5m8d"
+```text
+clip_image.onnx
+clip_text.onnx
+```
+
+---
+
+## Run Inference
+
+```bash
 python test.py
 ```
 
 ---
 
-## Example
+# Example
 
-```python id="k2zll9"
+## Candidate Prompts
+
+```python
 candidate_prompts = [
     "a photo of a dog",
     "a sports car",
@@ -74,9 +93,9 @@ candidate_prompts = [
 ]
 ```
 
-### Output
+## Output
 
-```text id="plh7c2"
+```text
 Image: dog.jpg
 
 82.31%  a photo of a dog
@@ -87,35 +106,37 @@ Image: dog.jpg
 
 ---
 
-## Repository Structure
+# Repository Structure
 
-```text id="0j6s2k"
-build.py         Export CLIP models to ONNX
-test.py          Run similarity inference
-clip_image.onnx  Vision encoder
-clip_text.onnx   Text encoder
+```text
+CLIP-ONNX/
+│
+├── build.py          # Export CLIP models to ONNX
+├── test.py           # Run similarity inference
+├── clip_image.onnx   # Vision encoder
+└── clip_text.onnx    # Text encoder
 ```
 
 ---
 
-## Supported Models
+# Supported Models
 
-Default:
+## Default
 
-```python id="xwpfq8"
+```python
 MODEL = "openai/clip-vit-base-patch32"
 ```
 
-Compatible:
+## Compatible Models
 
-```text id="y5m95x"
+```text
 openai/clip-vit-base-patch16
 openai/clip-vit-large-patch14
 ```
 
 ---
 
-## Supported Hardware
+# Supported Hardware
 
 Designed for:
 
@@ -126,22 +147,22 @@ Designed for:
 * Edge devices
 * Mini PCs
 
-No CUDA required.
+CUDA is not required.
 
 ---
 
-## Performance Notes
+# Performance Notes
 
-* Images resized to `224×224`
+* Images are resized to `224×224`
 * FP32 preserves embedding quality
-* Batched inference recommended for large datasets
+* Batched inference is recommended for large datasets
 * Softmax scores are relative similarity rankings
 
 ---
 
-## Example Integration
+# Example Integration
 
-```python id="l5u7o7"
+```python
 from test import encode_text, encode_image
 
 text_emb = encode_text(["a photo of a dog"])
@@ -154,7 +175,7 @@ print(scores)
 
 ---
 
-## Credits
+# Credits
 
 * OpenAI CLIP
 * Hugging Face Transformers
