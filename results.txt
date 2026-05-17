@@ -1,0 +1,8 @@
+Image: test_car.jpg
+   49.12%  a golden retriever puppy sitting on grass
+   50.88%  a black ford mustang sports car <-- BEST
+
+Image: test_dog.jpg
+   52.99%  a golden retriever puppy sitting on grass <-- BEST
+   47.01%  a black ford mustang sports car
+

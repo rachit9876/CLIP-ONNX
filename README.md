@@ -1,88 +1,175 @@
 # CLIP-ONNX
 
-```markdown
-# ONNX CLIP Image-Text Similarity
+Run OpenAI's CLIP model fully offline using ONNX Runtime. No GPU required : built for systems with iGPUs.
 
-This project demonstrates how to export OpenAI's CLIP (ViT-B/32) model to ONNX format, apply INT8 quantization to the text model for faster inference, and calculate image-text similarity using `onnxruntime`.
+Given a text prompt and a folder of images, it ranks how well each image matches the prompt.
 
-## 📁 Project Structure
+---
 
-.
-├── export_clip.py      # Exports the CLIP text encoder to ONNX
-├── export_image.py     # Exports the CLIP vision encoder to ONNX
-├── quantize.py         # Dynamically quantizes the text model to INT8
-├── test_onnx.py        # Quick test script for text embeddings
-├── clip_full.py        # Final script: compares an image to a text prompt
-├── test.jpg            # (Required) Sample image for testing
-└── README.md           # This file
+## How It Works
+
+CLIP (ViT-B/32) has two encoders — one for text, one for images. Both produce embeddings in the same vector space, so you can measure similarity between them using cosine similarity.
+
+This project exports both encoders to ONNX format for fast CPU inference, then uses softmax over a set of candidate prompts to classify each image.
+
+```
+Image → Vision Encoder (FP32) → image embedding (512-dim)
+Text  → Text Encoder  (FP32) → text embedding  (512-dim)
+                                      ↓
+                         cosine similarity × logit_scale
+                                      ↓
+                              softmax → % match
 ```
 
-## 🚀 Getting Started
+---
 
-### 1. Prerequisites
-- Python 3.8 or higher
-- Git
+## Files
 
-### 2. Clone the Repository
+| File | Purpose |
+|------|---------|
+| `build.py` | Downloads CLIP from HuggingFace, exports to ONNX |
+| `test.py` | Runs inference on images in the current folder |
+| `clip_image.onnx` | Vision encoder — FP32, ~351MB |
+| `clip_text.onnx` | Text encoder — FP32, ~254MB |
 
-### 3. Create and Activate a Virtual Environment
+> **Note:** `clip_text_int8.onnx` is also generated during build but not used. INT8 quantization degraded embedding quality enough to flip rankings. Delete it after building.
 
-**On macOS / Linux:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
+---
+
+## Setup
+
+**Requirements**
+
+```
+Python 3.10+
+torch
+transformers
+onnxruntime
+onnx
+Pillow
+numpy
 ```
 
-**On Windows:**
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 4. Install Dependencies
-```bash
-pip install --upgrade pip
-pip install torch transformers onnx onnxruntime numpy Pillow
-```
-
-## 🛠️ Usage & Pipeline
-
-Follow these steps in order to generate the ONNX models and test the similarity.
-
-### Step 1: Export the Base ONNX Models
-Export the text and image encoders from the Hugging Face Transformers library.
-
-```bash
-python export_clip.py
-# Output: clip_text.onnx
-
-python export_image.py
-# Output: clip_image.onnx
-```
-
-### Step 2: Quantize the Text Model (Optional but Recommended)
-This reduces the file size and speeds up inference by converting the text model weights to INT8.
+Install:
 
 ```bash
-python quantize.py
-# Output: clip_text_int8.onnx
+pip install torch transformers onnxruntime onnx Pillow numpy
 ```
 
-### Step 3: Test Text Embeddings
-Verify that the text ONNX model is working and outputs normalized embeddings. *(Note: This script uses the unquantized model).*
+**Build the ONNX models** (one-time, needs internet to download CLIP weights ~600MB):
 
 ```bash
-python test_onnx.py
+python build.py
 ```
 
-### Step 4: Run Full Image-Text Similarity
-This script uses the quantized text model (`clip_text_int8.onnx`) and the image model (`clip_image.onnx`) to calculate the cosine similarity between a detailed text prompt and an image.
+This generates `clip_image.onnx` and `clip_text.onnx` in the current folder.
 
-1. Ensure you have an image named `test.jpg` in the root directory.
-2. Run the script:
+---
+
+## Usage
+
+1. Put your images (`.jpg`, `.jpeg`, `.png`) in the same folder as `test.py`
+2. Open `test.py` and edit the candidate prompts at the top of `__main__`:
+
+```python
+candidate_prompts = [
+    "a photo of a golden retriever puppy",
+    "a black sports car parked outdoors",
+    "a photo of a cat",
+    "a photo of a person",
+    "a photo of a landscape",
+]
+```
+
+3. Run:
 
 ```bash
-python clip_full.py
+python test.py
 ```
-*You should see an output like: `Similarity: 0.284...` (higher numbers indicate a closer match).*
 
+**Example output:**
+
+```
+Image: test_dog.jpg
+   22.32%  a photo of a golden retriever puppy  <-- BEST
+   19.12%  a photo of a car
+   19.69%  a photo of a cat
+   19.71%  a photo of a person
+   19.16%  a photo of a landscape
+```
+
+Results are also saved to `results.txt`.
+
+---
+
+## Writing Good Prompts
+
+CLIP was trained on image captions, so natural caption-style prompts work best.
+
+| Instead of | Use |
+|------------|-----|
+| `"dog"` | `"a photo of a dog"` |
+| `"car"` | `"a black sports car parked outdoors"` |
+| `"forest"` | `"a dense green forest with tall trees"` |
+
+The more specific and descriptive, the better. Generic one-word labels give weak signal.
+
+Also: CLIP reads the **whole image**, not just the subject. A car photo with a dramatic sky background may score higher on "landscape" than "car" if the background dominates the frame.
+
+---
+
+## Adapting the Code
+
+**Change the model**
+
+In both `build.py` and `test.py`, update:
+
+```python
+MODEL = "openai/clip-vit-base-patch32"
+```
+
+Other supported models: `openai/clip-vit-large-patch14`, `openai/clip-vit-base-patch16`
+Larger models = better accuracy, bigger ONNX files.
+
+**Scan a specific folder instead of current directory**
+
+In `test.py`, replace:
+
+```python
+image_files = glob.glob("*.jpg") + glob.glob("*.jpeg") + glob.glob("*.png")
+```
+
+With:
+
+```python
+folder = r"C:\path\to\your\images"
+image_files = glob.glob(f"{folder}/*.jpg") + glob.glob(f"{folder}/*.jpeg") + glob.glob(f"{folder}/*.png")
+```
+
+**Use it as a module in your own code**
+
+```python
+from test import encode_text, encode_image, similarity, softmax
+import numpy as np
+
+text_emb = encode_text(["a photo of a dog"])
+image_emb = encode_image("myimage.jpg")
+
+logits = (image_emb @ text_emb.T)[0] * 100.0
+print(f"Score: {logits[0]:.2f}")
+```
+
+---
+
+## Known Limitations
+
+- Images are resized to 224×224 before inference. Very wide or tall images will be squished — crop first for best results.
+- Softmax scores are relative to your candidate list. A "best" pick at 22% just means it beat your other options — it's not a confidence score in the absolute sense.
+- CPU inference on a large image folder is slow. For batches over ~500 images, consider batching `encode_image` calls.
+
+---
+
+## Credits
+
+Model weights: [OpenAI CLIP](https://github.com/openai/CLIP)
+Exported via: [HuggingFace Transformers](https://huggingface.co/openai/clip-vit-base-patch32) + [ONNX Runtime](https://onnxruntime.ai/)
